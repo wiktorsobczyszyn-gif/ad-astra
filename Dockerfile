@@ -1,9 +1,16 @@
-FROM ghcr.io/puppeteer/puppeteer:latest
-ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true \
-    PUPPETEER_EXECUTABLE_PATH=/usr/bin/google-chrome-stable
+FROM ghcr.io/puppeteer/puppeteer:22.6.0
+
+# Ustawiamy katalog roboczy
 WORKDIR /usr/src/app
+
+# Kopiujemy pliki projektu
 COPY package*.json ./
 RUN npm install
+
+# Kopiujemy resztę kodu
 COPY . .
-EXPOSE 3000
+
+# Ważne: Render używa portu 10000 domyślnie
+EXPOSE 10000
+
 CMD [ "node", "index.js" ]
