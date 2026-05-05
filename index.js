@@ -1,44 +1,38 @@
 const express = require('express');
 const puppeteer = require('puppeteer');
-
 const app = express();
-const port = process.env.PORT || 3000;
 
+// TO JEST KLUCZOWE: Serwer musi umieć przyjąć surowy tekst HTML
 app.use(express.text({ type: 'text/html', limit: '10mb' }));
 
 app.post('/generuj-pdf', async (req, res) => {
-  if (!req.body) {
-    return res.status(400).send('Brak kodu HTML w zapytaniu.');
-  }
+    let browser;
+    try {
+        const htmlContent = req.body; // Tutaj trafia Twój kod z PHP
 
-  let browser;
-  try {
-    browser = await puppeteer.launch({
-      args: [
-        '--no-sandbox', 
-        '--disable-setuid-sandbox',
-        '--disable-dev-shm-usage',
-        '--no-zygote'
-      ]
-    });
-    
-    const page = await browser.newPage();
-    await page.setContent(req.body, { waitUntil: 'networkidle0' });
-    
-    const pdfBuffer = await page.pdf({ 
-      format: 'A4', 
-      printBackground: true 
-    });
-    
-    res.contentType('application/pdf');
-    res.send(pdfBuffer);
+        browser = await puppeteer.launch({
+            args: ['--no-sandbox', '--disable-setuid-sandbox', '--no-zygote']
+        });
+        
+        const page = await browser.newPage();
+        
+        // Ustawiamy treść jako HTML, a nie jako tekst
+        await page.setContent(htmlContent, { waitUntil: 'networkidle0' });
+        
+        const pdf = await page.pdf({
+            format: 'A4',
+            printBackground: true,
+            margin: { top: '20px', right: '20px', bottom: '20px', left: '20px' }
+        });
 
-  } catch (error) {
-    console.error('Błąd generatora:', error);
-    res.status(500).send('Wystąpił błąd serwera podczas generowania PDF.');
-  } finally {
-    if (browser) await browser.close();
-  }
+        res.contentType("application/pdf");
+        res.send(pdf);
+    } catch (e) {
+        res.status(500).send("Błąd generatora: " + e.message);
+    } finally {
+        if (browser) await browser.close();
+    }
 });
 
-app.listen(port, () => console.log(`Serwer API działa na porcie ${port}`));
+const PORT = process.env.PORT || 10000;
+app.listen(PORT, () => console.log(`Serwer API działa na porcie ${PORT}`));
